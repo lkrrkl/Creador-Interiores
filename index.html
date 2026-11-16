@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Creador de Interiores Isométrico</title>
+<style>
+:root{--bg:#fdf8f2;--fg:#2b2b33;--pn:#fffffff2;--bd:#e0d6c6;--ac:#e0605f;color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1c1d24;--fg:#ecebf0;--pn:#272831f2;--bd:#3a3b47;color-scheme:dark}}
+*{box-sizing:border-box}html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font:13px system-ui,-apple-system,"Segoe UI",sans-serif}
+canvas{position:fixed;inset:0;width:100%;height:100%;touch-action:none;display:block}
+.bar{position:fixed;display:flex;gap:6px;background:var(--pn);border:1px solid var(--bd);border-radius:12px;padding:6px;z-index:5}
+#lb,#rb{top:calc(50% + 33px);transform:translateY(-50%);flex-direction:column;max-height:calc(100vh - 130px);overflow-y:auto}
+#lb{left:calc(8px + env(safe-area-inset-left,0px))}#rb{right:calc(8px + env(safe-area-inset-right,0px))}
+button{font:inherit;color:var(--fg);background:transparent;border:1px solid transparent;border-radius:9px;cursor:pointer;min-width:38px;height:38px;font-size:19px;padding:0 6px}
+button.on{background:var(--ac);color:#fff}button:hover{border-color:var(--bd)}
+#cb{left:50%;bottom:calc(8px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);max-width:calc(100vw - 130px);flex-wrap:wrap;align-items:center;justify-content:center}
+.sw{width:24px;height:24px;min-width:24px;border-radius:6px;border:2px solid var(--bd);padding:0}.sw.on{border-color:var(--fg)}
+input[type=color]{width:34px;height:28px;padding:0;border:1px solid var(--bd);border-radius:6px;background:none}
+select,#cb button{font-size:13px;height:30px}select{background:var(--bg);color:var(--fg);border:1px solid var(--bd);border-radius:8px}
+#pop{position:fixed;left:calc(64px + env(safe-area-inset-left,0px));top:calc(50% + 33px);transform:translateY(-50%);width:min(330px,calc(100vw - 140px));max-height:calc(100vh - 140px);display:flex;flex-direction:column;gap:6px;z-index:6;flex-wrap:nowrap}
+#tabs{display:flex;gap:4px;overflow-x:auto;padding-bottom:3px}#tabs button{font-size:12px;height:28px;white-space:nowrap;border-color:var(--bd)}
+#grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(68px,1fr));gap:5px;overflow:auto}
+#grid button{height:auto;display:flex;flex-direction:column;align-items:center;font-size:10px;line-height:1.1;padding:3px;border-color:var(--bd)}
+#grid canvas{position:static;width:56px;height:56px}
+#st{position:fixed;inset:0;background:var(--bg);z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;padding:20px}
+#st h1{margin:0;font-size:26px}.card{display:flex;flex-wrap:wrap;gap:12px;justify-content:center}
+.card button{height:auto;width:150px;padding:16px 8px;font-size:15px;border:2px solid var(--bd);background:var(--pn)}.card button b{display:block;font-size:30px}
+#toast{position:fixed;top:calc(12px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);background:var(--ac);color:#fff;padding:6px 12px;border-radius:10px;z-index:30;display:none}
+#hd{position:fixed;top:0;left:0;right:0;z-index:7;display:flex;flex-direction:column;align-items:center;gap:3px;padding:calc(4px + env(safe-area-inset-top,0px)) 8px 5px;background:var(--pn);border-bottom:1px solid var(--bd)}
+#ttl{font-weight:700;font-size:16px}#sub{display:flex;gap:8px;align-items:center;font-size:13px}#sub input{font:inherit;width:140px;height:28px;padding:0 8px;border:1px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--fg)}
+#sub button{height:30px;min-width:36px;font-size:17px;border-color:var(--bd)}
+#md{position:fixed;inset:0;background:#0006;z-index:40;display:none;align-items:center;justify-content:center}#md .bx{background:var(--bg);border:1px solid var(--bd);border-radius:12px;padding:18px;max-width:320px;text-align:center;font-size:14px}#md button{border:1px solid var(--bd);font-size:14px;padding:0 16px;margin:10px 4px 0}
+@media (max-height:720px){#lb button,#rb button{height:33px;min-width:33px;font-size:17px}}
+</style></head><body>
+<canvas id="c"></canvas>
+<div id="hd"><div id="ttl">🏠 Creador de Interiores Isométrico</div><div id="sub"><label>Creado por <input id="by" placeholder="tu nombre" maxlength="40"></label><button id="sv" title="Guardar imagen PNG">💾</button><button id="clr" title="Borrar todo">🗑️</button></div></div>
+<div id="md"><div class="bx"><div id="mt"></div><button id="my">Sí, borrar todo</button><button id="mn">Cancelar</button></div></div>
+<div id="lb" class="bar"></div><div id="rb" class="bar"></div><div id="pop" class="bar"></div><div id="cb" class="bar"></div><div id="toast"></div>
+<div id="st"><h1>🏠 Creador de Interiores</h1><div>Elige el tamaño del terreno (hasta 3 pisos)</div>
+<div class="card"><button data-n="15"><b>🏡</b>Pequeño<br>15 × 15</button><button data-n="22"><b>🏘️</b>Mediano<br>22 × 22</button><button data-n="30"><b>🏙️</b>Grande<br>30 × 30</button></div>
+<button id="cont" style="display:none;width:auto;padding:0 18px;border:2px solid var(--bd)">Continuar proyecto guardado</button></div>
+<script>
+const TW=64,TH=32,TZ=34,H=2.4,$=id=>document.getElementById(id),cv=$('c');let g=cv.getContext('2d');
+const legs=(x,y,w,d,h,c,t=.1)=>[[x,y,0,t,t,h,c],[x+w-t,y,0,t,t,h,c],[x,y+d-t,0,t,t,h,c],[x+w-t,y+d-t,0,t,t,h,c]];
+// plantillas de cajas [x,y,z,ancho,fondo,alto,color] ('c' = color elegido)
+const K={
+ tbl:(w,d,h)=>[...legs(.08,.08,w-.16,d-.16,h-.1,'#6b4a2f'),[0,0,h-.1,w,d,.1,'c']],
+ chr:(w,d,h)=>[...legs(.15,.15,w-.3,d-.3,.4,'#5a3a22'),[.15,.15,.4,w-.3,d-.3,.1,'c'],[.15,.15,.5,w-.3,.1,Math.max(.2,h-.5),'c']],
+ sof:(w,d,h)=>[[0,0,0,w,d,.4,'c'],[0,0,.4,w,.25,h-.4,'c'],[0,0,.4,.2,d,.25,'c'],[w-.2,0,.4,.2,d,.25,'c']],
+ bed:(w,d,h)=>[[0,0,0,w,d,.3,'#6b4a2f'],[.05,.1,.3,w-.1,d-.15,.22,'#e6e6ea'],[.15,.12,.52,w-.3,.4,.12,'#fff'],[0,0,.3,w,.1,h-.3,'c']],
+ cab:(w,d,h)=>[[0,0,0,w,d,h,'c'],[w*.4,d,h*.5,w*.2,.03,.15,'#333333']],
+ shf:(w,d,h)=>[[0,0,0,w,d-.06,h,'c'],[.08,.05,h*.1,w-.16,d-.05,h*.18,'#d9822b'],[.08,.05,h*.4,w-.16,d-.05,h*.18,'#3a7ab5'],[.08,.05,h*.7,w-.16,d-.05,h*.18,'#4a9a5a']],
+ app:(w,d,h)=>[[.03,.03,0,w-.06,d-.09,h,'c'],[.1,d-.06,h*.1,w-.2,.06,h*.35,'#555555'],[w*.3,d-.06,h*.6,w*.4,.06,.1,'#999999']],
+ rug:(w,d)=>[[0,0,0,w,d,.03,'c']],
+ bwl:(w,d,h)=>[[0,0,0,w,d,h,'#f2f4f6'],[.12,.12,h-.08,w-.24,d-.24,.1,'c']],
+ pln:(w,d,h)=>[[w*.3,d*.3,0,w*.4,d*.4,h*.3,'#c9c5bd'],[w*.1,d*.1,h*.3,w*.8,d*.8,h*.7,'c']],
+ tre:(w,d,h)=>[[w*.4,d*.4,0,w*.2,d*.2,h*.45,'#6b4a2f'],[w*.1,d*.1,h*.4,w*.8,d*.8,h*.35,'c'],[w*.25,d*.25,h*.7,w*.5,d*.5,h*.3,'c']],
+ hng:(w,d,h)=>[[0,0,1.3,w,.5,h,'c']],
+ car:(w,d,h)=>[[0,0,.12,w,d,h*.5,'c'],[.1,d*.3,.12+h*.5,w-.2,d*.4,h*.5,'#99ccdd'],[0,.2,0,.15,.5,.25,'#222222'],[w-.15,.2,0,.15,.5,.25,'#222222'],[0,d-.7,0,.15,.5,.25,'#222222'],[w-.15,d-.7,0,.15,.5,.25,'#222222']]
+};
+const KO={
+ ob:(s,h)=>[[.5-s/2,.5-s/2,0,s,s,h,'c']],
+ top:(s,h)=>[[.5-s/2,.5-s/2,0,s,s,h*.7,'c'],[.5-s*.35,.5-s*.35,h*.7,s*.7,s*.7,h*.3,'#ffffff']],
+ pl:(s,h)=>[[.5-s/3,.5-s/3,0,s*.66,s*.66,h*.35,'#c9c5bd'],[.5-s/2,.5-s/2,h*.35,s,s,h*.65,'c']],
+ tv:(s,h)=>[[.3,.25,0,.4,.3,.06,'#222222'],[.5-s/2,.3,.06,s,.08,h,'c']],
+ lm:(s,h)=>[[.35,.35,0,.3,.3,.05,'#333333'],[.47,.47,.05,.06,.06,h*.65,'#333333'],[.5-s/2,.5-s/2,h*.65,s,s,h*.35,'c']],
+ bk:(s,h)=>[[.5-s/2,.5-s/2,0,s,s*.8,h*.4,'#d9822b'],[.5-s/2,.5-s/2,h*.4,s,s*.8,h*.3,'c'],[.55-s/2,.5-s/2,h*.7,s*.8,s*.7,h*.3,'#c4403a']],
+ fl:(s,h)=>[[.5-s/2,.5-s/2,0,s,s*.8,h,'c']]
+};
+const rows=(s,fn)=>s.split(';').map(r=>{const a=r.split('|'),n=a[0],k=a[1],p=a.slice(2,5).map(Number),c=a[5]||a[4];return fn(n,k,p,c,a)});
+const mkM=s=>rows(s,(n,k,[w,d,h],c)=>({n,w,d,c,wall:k=='hng',rug:k=='rug',b:K[k](w,d,h)}));
+const mkO=s=>rows(s,(n,k,[sz,h],c,a)=>({n,w:1,d:1,c:a[4],b:KO[k](sz,h)}));
+const M=[['Jardín','🌳',"Árbol|tre|1|1|2.2|#3f9a55;Arbusto|tre|1|1|.9|#4aa860;Palmera|tre|1|1|2.6|#5bb86a;Banca|chr|2|1|.8|#8a5a35;Mesa jardín|tbl|2|2|.75|#c9c5bd;Fuente|bwl|2|2|.7|#8fd0ee;Jardinera|cab|2|1|.5|#a9754b;Césped|rug|2|2|0|#6dbf6a;Parrilla|app|1|1|.9|#333333;Muro bajo|cab|3|1|.8|#d9d0c0"],
+['Baño','🚿',"Inodoro|bwl|1|1|.45|#e8eef2;Lavabo|bwl|1|1|.9|#8fd0ee;Lavabo doble|bwl|2|1|.9|#8fd0ee;Bañera|bwl|2|1|.5|#8fd0ee;Jacuzzi|bwl|2|2|.6|#8fd0ee;Ducha|app|1|1|2.2|#bfe3f2;Bidé|bwl|1|1|.4|#e8eef2;Mueble baño|cab|1|1|.8|#a9754b;Gabinete alto|shf|1|1|1.8|#e8e8ee;Cesto|cab|1|1|.6|#c9a97a"],
+['Dormitorio','🛏️',"Cama 1 plaza|bed|1|2|.7|#4aa3c4;Cama doble|bed|2|2|.9|#c0444a;Cama king|bed|3|2|1|#7a3fb5;Litera|bed|1|2|1.3|#d9822b;Cuna|bed|1|1|.7|#f0d070;Cómoda|cab|2|1|.9|#a9754b;Closet|cab|2|1|2|#8a5a35;Mesa de noche|cab|1|1|.55|#a9754b;Tocador|tbl|1|1|.8|#e8d8c0;Zapatera|shf|1|1|1|#8a5a35"],
+['Sala','🛋️',"Sofá 2 plazas|sof|2|1|.9|#b5473f;Sofá 3 plazas|sof|3|1|.9|#8a6a6e;Esquinero|sof|2|2|.9|#4a6fa5;Sillón|sof|1|1|.85|#8a6a6e;Mesa centro|tbl|1|1|.4|#4aa3c4;Mueble TV|cab|2|1|.5|#5a3a22;Librero|shf|1|1|1.8|#8a5a35;Mesa lateral|tbl|1|1|.55|#e8d8c0;Puf|cab|1|1|.4|#e0605f;Chimenea|app|2|1|1.4|#8a8a90"],
+['Comedor','🍽️',"Mesa 2 personas|tbl|1|2|.75|#e8d8c0;Mesa 4 personas|tbl|2|2|.75|#4aa3c4;Mesa 6 personas|tbl|3|2|.75|#a9754b;Mesa 8 personas|tbl|4|2|.75|#8a5a35;Silla|chr|1|1|1|#d9822b;Silla tapizada|chr|1|1|1.1|#c0444a;Banca|chr|2|1|.9|#8a5a35;Aparador|cab|2|1|.9|#a9754b;Vitrina|shf|1|1|1.8|#e8d8c0;Carrito bar|cab|1|1|.8|#3a3f4d"],
+['Cocina','🍳',"Mueble bajo|cab|1|1|.9|#a9754b;Mueble doble|cab|2|1|.9|#a9754b;Alacena alta|hng|1|1|.7|#a9754b;Refrigerador|app|1|1|2|#e4e6ea;Estufa|app|1|1|.9|#8f949c;Fregadero|bwl|1|1|.9|#c9d0d6;Isla|cab|2|1|.95|#4aa3c4;Lavaplatos|app|1|1|.9|#d9dde2;Horno columna|app|1|1|2|#3a3f4d;Campana|hng|1|1|.5|#8f949c"],
+['Terraza','⛱️',"Sillón exterior|sof|1|1|.8|#e8d8c0;Sofá exterior|sof|2|1|.8|#4aa3c4;Mesa terraza|tbl|2|1|.7|#c9c5bd;Tumbona|bed|1|2|.5|#4aa3c4;Hamaca|bed|2|1|.5|#e8d8c0;Sombrilla|tre|1|1|2|#e0605f;Mesa alta|tbl|1|1|1.1|#8a5a35;Taburete|chr|1|1|.7|#8a5a35;Jacuzzi exterior|bwl|2|2|.6|#8fd0ee;Maceta grande|pln|1|1|1.2|#3f9a55"],
+['Estudio','📚',"Escritorio|tbl|2|1|.75|#a9754b;Escritorio en L|tbl|2|2|.75|#8a5a35;Silla estudio|chr|1|1|1.1|#3a3f4d;Librero|shf|1|1|1.8|#8a5a35;Librero ancho|shf|2|1|1.6|#a9754b;Archivero|cab|1|1|1.2|#8a8f98;Sillón lectura|sof|1|1|.9|#c0444a;Mesa de dibujo|tbl|2|1|.9|#e8d8c0;Pizarra|cab|2|1|1.4|#ffffff;Gabinete|cab|2|1|1.5|#a9754b"],
+['Oficina','💼',"Escritorio ejecutivo|tbl|2|1|.75|#5a3a22;Escritorio doble|tbl|3|1|.75|#e8d8c0;Silla ejecutiva|chr|1|1|1.2|#3a3f4d;Silla visita|chr|1|1|.9|#4a6fa5;Mesa reuniones|tbl|3|2|.75|#a9754b;Archivador|cab|1|1|1.3|#8a8f98;Recepción|cab|3|1|1.1|#4aa3c4;Sofá espera|sof|2|1|.8|#8a6a6e;Impresora|app|1|1|.8|#d9dde2;Locker|cab|1|1|1.8|#8a8f98"],
+['Juegos','🎮',"Billar|tbl|3|2|.9|#2e8b57;Ping pong|tbl|3|2|.8|#2f6bb5;Futbolín|tbl|2|1|.9|#d9822b;Arcade|app|1|1|1.8|#7a3fb5;Pinball|app|1|2|1|#c0444a;Sofá gamer|sof|2|1|.9|#3a3f4d;Puf|cab|1|1|.4|#e0605f;Estante juegos|shf|2|1|1.4|#8a5a35;Mesa póker|tbl|2|2|.75|#2e8b57;Mueble TV|cab|2|1|.5|#3a3f4d"],
+['Lavandería','🧺',"Lavadora|app|1|1|.95|#f2f4f6;Secadora|app|1|1|.95|#e4e6ea;Torre de lavado|app|1|1|1.9|#f2f4f6;Lavadero|bwl|1|1|.9|#c9d0d6;Mueble lavandería|cab|2|1|.9|#e8e8ee;Estante|shf|1|1|1.6|#8a5a35;Mesa planchado|tbl|2|1|.9|#e8d8c0;Canasto|cab|1|1|.6|#c9a97a;Tendedero|tbl|2|1|1.5|#c9c5bd;Armario limpieza|cab|1|1|2|#8a8f98"],
+['Garaje','🚗',"Auto|car|2|3|1|#c0444a;Camioneta|car|2|3|1.2|#2f6bb5;Moto|car|1|2|.7|#3a3f4d;Bicicleta|car|1|2|.5|#e0605f;Mesa de trabajo|tbl|2|1|.95|#8a5a35;Estante herramientas|shf|2|1|1.8|#8a8f98;Caja herramientas|cab|1|1|.8|#c0444a;Tanque|app|1|1|1.2|#c0444a;Casillero|cab|1|1|1.9|#8a8f98;Llantas|cab|1|1|.6|#222222"]
+].map(([n,i,s])=>({n,i,items:mkM(s)}));
+const OBX=["Piedras|ob|.6|.2|#a0a0a8;Hongos|top|.3|.3|#e0605f;Girasol|pl|.4|1|#f6d020;Cartel madera|ob|.5|.7|#a9754b",
+"Perfume|top|.2|.35|#c9a0dc;Espejo de mano|fl|.4|.05|#9fd3e6;Shampoo|top|.25|.5|#4aa3c4;Esponja|ob|.3|.1|#f6d58a",
+"Reloj|top|.35|.3|#ffffff;Portarretrato|fl|.4|.35|#a9754b;Almohada|fl|.7|.15|#ffffff;Caja de joyas|ob|.4|.2|#c0444a",
+"Control remoto|ob|.2|.05|#222222;Cojines|fl|.6|.15|#e0605f;Revistas|bk|.6|.2|#e8808a;Cuenco|top|.4|.2|#f2a07b",
+"Copas|top|.2|.35|#ffffff;Servilletas|fl|.5|.05|#e8808a;Salero|top|.15|.2|#ffffff;Pan|top|.4|.2|#d9b27a",
+"Tostadora|ob|.5|.3|#c9d0d6;Hervidor|top|.35|.45|#8f949c;Cuchillos|fl|.5|.05|#8a8f98;Especias|top|.25|.3|#c0444a",
+"Hielera|ob|.6|.4|#4aa3c4;Libro|bk|.5|.2|#3a7ab5;Sombrero|top|.5|.15|#f6d58a;Bebida|top|.2|.35|#f2a07b",
+"Calculadora|ob|.3|.05|#3a3f4d;Reloj de arena|top|.25|.4|#f6d58a;Cuaderno|fl|.5|.06|#e0605f;Microscopio|top|.3|.6|#8f949c",
+"Engrapadora|ob|.4|.12|#c0444a;Carpetas|bk|.6|.3|#4a6fa5;Agenda|fl|.5|.06|#3a3f4d;Calendario|fl|.4|.3|#ffffff",
+"Ajedrez|fl|.7|.05|#8a5a35;Cartas|fl|.4|.04|#ffffff;Peluche|ob|.4|.4|#c9a0dc;Auriculares|top|.35|.25|#3a3f4d",
+"Suavizante|top|.35|.5|#c9a0dc;Pinzas|ob|.3|.1|#f6d58a;Jabón de barra|ob|.3|.1|#ffffff;Cepillo|fl|.5|.08|#d9822b",
+"Aceite|top|.3|.45|#f6d020;Llave inglesa|fl|.6|.05|#8a8f98;Linterna|top|.2|.35|#e0605f;Guantes|fl|.4|.08|#d9822b"];
+const OB=[["Jardín","Flores|pl|.6|.4|#e66a8a;Roca|ob|.7|.35|#8a8a90;Maceta|pl|.6|.8|#3f9a55;Regadera|top|.4|.35|#4aa3c4;Farol|lm|.4|.8|#f0d070;Gnomo|top|.3|.5|#e0605f"],
+["Baño","Toallas|bk|.6|.35|#4aa3c4;Jabón|top|.3|.15|#f6d58a;Cepillos|top|.2|.3|#e0605f;Papel higiénico|top|.3|.25|#ffffff;Planta|pl|.5|.6|#3f9a55;Vela|top|.25|.25|#f6d58a"],
+["Dormitorio","Lámpara|lm|.5|.6|#f0d070;Despertador|top|.3|.25|#e0605f;Libros|bk|.6|.3|#3a7ab5;Peluche|ob|.4|.4|#c9a0dc;Cojín|fl|.6|.15|#e8808a;Laptop|fl|.7|.05|#3a3f4d"],
+["Sala","TV|tv|.9|.55|#1b1f2a;Lámpara|lm|.5|.9|#f0d070;Planta|pl|.7|.9|#3f9a55;Florero|top|.35|.4|#6bb5d6;Libros|bk|.6|.3|#3a7ab5;Consola|ob|.5|.1|#222222"],
+["Comedor","Plato|fl|.6|.04|#ffffff;Florero|top|.35|.45|#6bb5d6;Vela|top|.2|.3|#f6d58a;Frutero|top|.5|.25|#e0605f;Jarra|top|.3|.4|#8fd0ee;Botella|top|.2|.5|#3f9a55"],
+["Cocina","Olla|top|.5|.3|#8f949c;Sartén|fl|.6|.08|#333333;Taza|top|.3|.2|#e8e8e8;Licuadora|top|.3|.55|#d9dde2;Tabla|fl|.7|.04|#d9b27a;Frutas|top|.5|.25|#f2a07b"],
+["Terraza","Planta|pl|.7|.9|#3f9a55;Vela|top|.2|.3|#f6d58a;Copa|top|.2|.3|#ffffff;Cojín|fl|.6|.15|#e0605f;Farol|lm|.4|.8|#f0d070;Maceta|pl|.6|.6|#e66a8a"],
+["Estudio","Laptop|fl|.7|.05|#3a3f4d;Lámpara|lm|.5|.7|#f0d070;Libros|bk|.6|.35|#c4403a;Monitor|tv|.8|.5|#1b1f2a;Globo|top|.45|.5|#4aa3c4;Lápices|top|.3|.25|#d9822b"],
+["Oficina","Monitor|tv|.8|.5|#1b1f2a;Laptop|fl|.7|.05|#d9dde2;Teléfono|ob|.35|.12|#222222;Papeles|fl|.6|.08|#ffffff;Taza|top|.3|.2|#e8e8e8;Planta|pl|.5|.6|#3f9a55"],
+["Juegos","Consola|ob|.5|.1|#222222;Control|ob|.3|.06|#c0444a;Dados|ob|.2|.2|#ffffff;Trofeo|top|.3|.5|#f0d070;TV|tv|.9|.55|#1b1f2a;Pelota|top|.35|.35|#e0605f"],
+["Lavandería","Detergente|top|.4|.55|#4aa3c4;Canasto|ob|.7|.5|#c9a97a;Plancha|ob|.5|.2|#8f949c;Ropa doblada|bk|.6|.35|#e8808a;Cesto|ob|.5|.4|#f6d58a;Planta|pl|.5|.6|#3f9a55"],
+["Garaje","Casco|top|.4|.35|#e0605f;Caja herramientas|ob|.7|.3|#c0444a;Llanta|ob|.6|.4|#222222;Galón|top|.4|.5|#f2a07b;Lámpara|lm|.5|.8|#f0d070;Extintor|top|.25|.7|#c0444a"]
+].map(([n,s],i)=>({n,i:M[i].i,items:mkO(s+';'+OBX[i])}));
+const KL={...KO,
+ sc:(s,h)=>[[.5-s/2,0,1.4,s,.08,h,'#555555'],[.5-s/2+.03,.08,1.4,s-.06,.2,h*.7,'c']],
+ st:(s,h)=>[[.5-s/2,0,1.5,s,.07,h,'c']],
+ fo:(s,h)=>[[.45,0,1.5,.1,.15,.1,'#444444'],[.5-s/2,.1,1.55,s,.3,h,'c']],
+ ct:(s,h)=>[[.5-s/2,0,1.3,s,.3,h,'c'],[.5-s/2,0,1.3+h,s,.3,.05,'#333333']],
+ f1:(s,h)=>[[.35,.35,0,.3,.3,.05,'#333333'],[.47,.47,.05,.06,.06,h*.75,'#333333'],[.5-s/2,.5-s/2,h*.75,s,s,h*.25,'c']],
+ f2:(s,h)=>[[.2,.55,0,.3,.3,.05,'#333333'],[.32,.67,.05,.06,.06,h,'#333333'],[.32,.15,h,.06,.58,.06,'#333333'],[.35-s/2,.05,h-.22,s,s*.9,.25,'c']],
+ f3:(s,h)=>[[.3,.3,0,.4,.4,.05,'#333333'],[.4,.4,.05,.2,.2,h,'c']],
+ f4:(s,h)=>[[.35,.35,0,.3,.3,.05,'#333333'],[.47,.47,.05,.06,.06,h*.5,'#333333'],[.5-s/2,.5-s/2,h*.5,s,s,s,'c']],
+ f5:(s,h)=>[[.4,.4,0,.2,.2,.05,'#333333'],[.47,.47,.05,.06,.06,h*.8,'#333333'],[.5-s/2,.5-s/2,h*.8,s,s,h*.2,'c']]};
+const mkL=(s,wall,obj)=>rows(s,(n,k,[sz,h],c,a)=>({n,w:1,d:1,c:a[4],wall,obj,b:KL[k](sz,h)}));
+const LZ=[['Pared','🔆',"Aplique clásico|sc|.4|.35|#f0d070;Aplique moderno|sc|.6|.2|#ffffff;Aplique doble|sc|.9|.3|#f6d58a;Aplique lectura|fo|.3|.2|#3a3f4d;Foco orientable|fo|.3|.25|#c9d0d6;Foco doble|fo|.6|.2|#8a8f98;Tira LED|st|.9|.06|#fff6c0;Tira LED azul|st|1|.06|#9fd3e6;Farol de pared|ct|.35|.5|#f0d070;Farol exterior|ct|.4|.6|#3a3f4d",1,0],
+['Piso','🏮',"De pie clásica|f1|.6|1.6|#f0d070;De pie moderna|f1|.4|1.7|#ffffff;Torchiere|f5|.5|1.8|#f6d58a;De arco|f2|.6|1.8|#c9d0d6;Trípode|f1|.7|1.5|#e8d8c0;Tubo LED|f3|.2|1.8|#fff6c0;Columna baja|f3|.2|.9|#9fd3e6;Globo|f4|.5|1.4|#ffffff;Industrial|f1|.5|1.5|#8a8f98;Bambú|f1|.5|1.6|#d9b27a",0,0],
+['Lámparas','💡',"Mesa clásica|lm|.5|.6|#f0d070;Moderna|lm|.35|.55|#ffffff;Velador|lm|.4|.4|#e8808a;Cúpula|lm|.6|.5|#3a7ab5;Industrial|lm|.4|.6|#8a8f98;Globo|top|.4|.45|#ffffff;Cerámica|top|.4|.5|#6bb5d6;Tubo|ob|.15|.5|#fff6c0;Vela eléctrica|top|.2|.3|#f6d58a;Flexo|lm|.3|.5|#c0444a",0,1]].map(([n,i,s,w,o])=>({n,i,items:mkL(s,!!w,!!o)}));
+// barandas: nombre|estilo|alto|grosor poste|color  (b balaustres, d densos, g vidrio, c cable, r doble riel, s panel)
+const RL=rows("Madera clásica|b|.9|.08|#a9754b;Metal negro|b|.95|.05|#3a3f4d;Vidrio|g|1|.05|#d9dde2;Cable inox|c|.95|.05|#8a8f98;Blanca moderna|b|.9|.06|#ffffff;Rústica troncos|r|.9|.12|#6b4a2f;Tubo dorado|r|.85|.05|#f0c040;Muro bajo|s|.7|.1|#e8d8c0;Reja|d|.9|.04|#222222;Cable rojo|c|.95|.05|#c0444a",(n,k,[h,pw],c)=>({n,sty:k,h,pw,c}));
+const stairBoxes=L=>L.furn.filter(f=>f.k=='s').flatMap(f=>build(tp(f),f.r,f.x,f.y,0,'#000').boxes);
+function railB(e,d,c,sb){const[t,x,y]=e.split(','),X=+x,Y=+y,r=[],h=d.h,pw=d.pw,th=pw+.03,s=d.sty;
+ for(let i=0;i<4;i++){const u0=i/4,u1=u0+.25,um=u0+.125,px=t=='H'?X+um:X,py=t=='H'?Y:Y+um;let b=0;
+  for(const q of sb)if(px>=q.x0-.07&&px<=q.x1+.07&&py>=q.y0-.07&&py<=q.y1+.07)b=Math.max(b,q.z1);
+  const E=(a,bb,z0,z1,cc,tt)=>r.push(eb(e,a,bb,b+z0,b+z1,cc,tt));
+  E(u0,u0+pw,0,h,c,th);if(i==3)E(1-pw,1,0,h,c,th);E(u0,u1,h-.06,h,c,th+.02);
+  if(s=='b'||s=='d'){E(u0,u1,.05,.1,c,th*.6);const n=s=='d'?3:1;for(let j=1;j<=n;j++){const u=u0+.25*j/(n+1);E(u-.015,u+.015,.1,h-.06,c,th*.5)}}
+  if(s=='g')E(u0,u1,.1,h-.06,'#a8d8f0',.03);
+  if(s=='c')[.3,.55,.8].forEach(k=>E(u0,u1,h*k,h*k+.025,c,.03));
+  if(s=='r')E(u0,u1,h*.45,h*.45+.07,c,th);
+  if(s=='s')E(u0,u1,0,h-.06,c,th)}
+ return r}
+// puertas y ventanas: nombre,u0,u1,z0,z1,travesaños,tipo(l=hoja,g=vidrio,o=abierta),color
+const mkD=s=>rows(s,(n,k,p,c,a)=>({n,u0:+a[1],u1:+a[2],z0:+a[3],z1:+a[4],m:+a[5],ty:a[6],c:a[7],op:1}));
+const DR=mkD("Simple|.25|.75|0|1.9|0|l|#a9754b;Ancha|.15|.85|0|1.9|0|l|#8a5a35;Doble|.05|.95|0|1.9|1|l|#a9754b;Vidrio|.25|.75|0|1.9|0|g|#5a3a22;Corrediza|.05|.95|0|2|1|g|#d9dde2;Arco|.2|.8|0|2|0|o|#e8d8c0;Rústica|.2|.8|0|2.1|0|l|#6b4a2f;Metálica|.25|.75|0|1.9|0|l|#8a8f98;Garaje|.03|.97|0|1.8|0|l|#d9dde2;Cantina|.25|.75|0|1|0|l|#c9a97a");
+const WN=mkD("Simple|.25|.75|.9|1.7|0|g|#ffffff;Ancha|.1|.9|.9|1.7|1|g|#ffffff;Alta|.3|.7|.5|2|0|g|#ffffff;Ventanal|.04|.96|.2|2.1|1|g|#3a3f4d;Baño|.3|.7|1.4|1.9|0|g|#ffffff;Doble|.08|.92|.9|1.7|2|g|#a9754b;Cuadrada|.25|.75|1|1.6|1|g|#ffffff;Corrida|0|1|1.3|1.8|3|g|#8a8f98;Francesa|.15|.85|.1|2|1|g|#e8d8c0;Pequeña|.35|.65|1.2|1.6|0|g|#ffffff");
+// gradas (altura total = H)
+function stB(k,w,d,n){const b=[],h=H/n;
+ if(k=='S')for(let i=0;i<n;i++)b.push([0,i*d/n,0,w,d/n,(i+1)*h,'c']);
+ if(k=='O'){for(let i=0;i<n;i++)b.push([0,i*d/n,(i+1)*h-.08,w,d/n,.08,'c']);b.push([0,d-.08,0,.08,.08,H,'#333333'],[w-.08,d-.08,0,.08,.08,H,'#333333'])}
+ if(k=='L'){const n1=n/2,s=w;for(let i=0;i<n1;i++)b.push([0,i*(s-1)/n1,0,1,(s-1)/n1,(i+1)*h,'c']);b.push([0,s-1,0,1,1,n1*h,'c']);for(let i=0;i<n-n1;i++)b.push([1+i*(s-1)/(n-n1),s-1,0,(s-1)/(n-n1),1,(n1+i+1)*h,'c'])}
+ if(k=='U'){const n1=n/2;for(let i=0;i<n1;i++)b.push([0,i*(d-1)/n1,0,1,(d-1)/n1,(i+1)*h,'c']);b.push([0,d-1,0,2,1,n1*h,'c']);for(let i=0;i<n-n1;i++)b.push([1,d-1-(i+1)*(d-1)/(n-n1),0,1,(d-1)/(n-n1),(n1+i+1)*h,'c'])}
+ if(k=='R'){b.push([.9,.9,0,.2,.2,H,'#555555']);for(let i=0;i<n;i++){const a=i/n*6.283,cx=1+.55*Math.cos(a),cy=1+.55*Math.sin(a);b.push([cx-.35,cy-.35,0,.7,.7,(i+1)*h,'c'])}}
+ return b}
+const ST=[["Recta","S",1,4,8,"#a9754b"],["Ancha","S",2,4,8,"#d9dde2"],["Empinada","S",1,3,8,"#8a5a35"],["Suave","S",1,5,10,"#e8d8c0"],["Madera abierta","O",1,4,8,"#a9754b"],["Abierta ancha","O",2,4,8,"#d9dde2"],["Flotante","O",1,3,7,"#3a3f4d"],["En L","L",3,3,8,"#c9a97a"],["En U","U",2,3,8,"#8a8f98"],["Caracol","R",2,2,12,"#c0444a"]].map(([n,k,w,d,s,c])=>({n,w,d,c,st:1,b:stB(k,w,d,s)}));
+const PAL=['#e8808a','#f2a07b','#f6d58a','#fbf0c8','#9fd3e6','#a9b8e8','#8fd0a0','#c9a0dc','#a9754b','#6b4a2f','#8a8aa0','#ffffff','#d9d9de','#3a3f4d','#c0444a','#4aa3c4'];
+const CATS={mueble:M,objeto:OB,luz:LZ,baranda:[{n:'Barandas',i:'🚧',items:RL}],puerta:[{n:'Puertas',i:'🚪',items:DR}],ventana:[{n:'Ventanas',i:'🪟',items:WN}],gradas:[{n:'Gradas',i:'🪜',items:ST}]};
+// ---------- estado ----------
+let N=15,S=null,cur=0,tool='mano',stack=false,wallH=H,rot=0,col='#e8808a',pat=0,zm=1,pan=[0,0],hov=null,paint=false,sel=null,popOpen=true,W=1,Hh=1,ox=0,oy=0,sc=1,ZO=0,dpr=1,drag=null;
+const A={mueble:0,objeto:0,luz:0,baranda:0,puerta:0,ventana:0,gradas:0},I={mueble:0,objeto:0,luz:0,baranda:0,puerta:0,ventana:0,gradas:0};
+const newL=()=>({floor:{},walls:{},ops:{},rails:{},furn:[],objs:[]});
+function newGame(n){N=n;S={n,lv:[newL(),newL(),newL()]};for(let y=0;y<n;y++)for(let x=0;x<n;x++)S.lv[0].floor[x+','+y]={c:'#efe6d6',p:0};cur=0;pan=[0,0];zm=1;sel=null;start()}
+const save=()=>{try{localStorage.setItem('interiores-v2',JSON.stringify(S))}catch(e){}};
+function toast(t){const e=$('toast');e.textContent=t;e.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>e.style.display='none',2200)}
+const tp=f=>f.k=='s'?ST[f.i]:f.k=='o'?OB[f.a].items[f.i]:f.k=='l'?LZ[f.a].items[f.i]:M[f.a].items[f.i];
+let TOPH=66;
+const cur$=()=>S.lv[cur];
+// ---------- geometría ----------
+const P=(x,y,z)=>[ox+(x-y)*TW/2*sc,oy+(x+y)*TH/2*sc-(z+ZO*H)*TZ*sc];
+function sh(h,f){const n=parseInt(h.slice(1),16),m=v=>Math.max(0,Math.min(255,Math.round(v*f)));return'rgb('+m(n>>16)+','+m(n>>8&255)+','+m(n&255)+')'}
+function poly(pts,fill,st){g.beginPath();pts.forEach((p,i)=>i?g.lineTo(p[0],p[1]):g.moveTo(p[0],p[1]));g.closePath();if(fill){g.fillStyle=fill;g.fill()}if(st){g.strokeStyle=st;g.lineWidth=1;g.stroke()}}
+function drawBox(b,tint){const c=tint||b.c;
+ poly([P(b.x0,b.y0,b.z1),P(b.x1,b.y0,b.z1),P(b.x1,b.y1,b.z1),P(b.x0,b.y1,b.z1)],sh(c,1.12),'rgba(0,0,0,.12)');
+ poly([P(b.x0,b.y1,b.z0),P(b.x1,b.y1,b.z0),P(b.x1,b.y1,b.z1),P(b.x0,b.y1,b.z1)],sh(c,.86),'rgba(0,0,0,.12)');
+ poly([P(b.x1,b.y0,b.z0),P(b.x1,b.y1,b.z0),P(b.x1,b.y1,b.z1),P(b.x1,b.y0,b.z1)],sh(c,.68),'rgba(0,0,0,.12)')}
+function build(t,r,x,y,z,color){let bs=t.b,w=t.w,d=t.d;
+ for(let k=0;k<r;k++){bs=bs.map(([a,b,zz,ww,dd,h,c])=>[d-(b+dd),a,zz,dd,ww,h,c]);[w,d]=[d,w]}
+ return{w,d,boxes:bs.map(([a,b,zz,ww,dd,h,c])=>({x0:x+a,y0:y+b,z0:z+zz,x1:x+a+ww,y1:y+b+dd,z1:z+zz+h,c:c=='c'?color:c}))}}
+function order(b){b.sort((p,q)=>(p.x0+p.x1+p.y0+p.y1)-(q.x0+q.x1+q.y0+q.y1));const n=b.length,adj=b.map(()=>[]),e=1e-9,bh=(a,c)=>a.x1<=c.x0+e||a.y1<=c.y0+e||a.z1<=c.z0+e;
+ for(let i=0;i<n;i++)for(let j=i+1;j<n;j++){const ab=bh(b[i],b[j]),ba=bh(b[j],b[i]);if(ab&&!ba)adj[j].push(i);else if(ba&&!ab)adj[i].push(j)}
+ const seen=new Uint8Array(n),out=[],v=i=>{if(seen[i])return;seen[i]=1;adj[i].forEach(v);out.push(b[i])};for(let i=0;i<n;i++)v(i);return out}
+function eb(e,u0,u1,z0,z1,c,th=.12){const[t,x,y]=e.split(',');const X=+x,Y=+y;return t=='H'?{x0:X+u0,x1:X+u1,y0:Y-th/2,y1:Y+th/2,z0,z1,c}:{x0:X-th/2,x1:X+th/2,y0:Y+u0,y1:Y+u1,z0,z1,c}}
+function opB(e,o,wc,wh){const d=(o.t=='D'?DR:WN)[o.i],c=o.c,r=[],add=(a,b,za,zb,cc,th)=>{zb=Math.min(zb,wh);if(zb>za)r.push(eb(e,a,b,za,zb,cc,th))};
+ add(0,d.u0,0,wh,wc);add(d.u1,1,0,wh,wc);add(d.u0,d.u1,d.z1,wh,wc);add(d.u0,d.u1,0,d.z0,wc);
+ if(d.ty=='g')add(d.u0,d.u1,d.z0,d.z1,'#a8d8f0',.04);if(d.ty=='l')add(d.u0,d.u1,d.z0,d.z1,c,.07);
+ add(d.u0,d.u0+.04,d.z0,d.z1,c,.15);add(d.u1-.04,d.u1,d.z0,d.z1,c,.15);add(d.u0,d.u1,d.z1-.04,d.z1,c,.15);if(d.z0>0)add(d.u0-.02,d.u1+.02,d.z0-.04,d.z0,c,.2);
+ for(let i=1;i<=d.m;i++){const u=d.u0+(d.u1-d.u0)*i/(d.m+1);add(u-.02,u+.02,d.z0,d.z1,c,.1)}return r}
+const dims=(t,r)=>{const s=build(t,r,0,0,0,'#000');return{w:s.w,d:s.d}};
+const covers=(f,x,y)=>{const s=dims(tp(f),f.r);return x>=f.x&&x<f.x+s.w&&y>=f.y&&y<f.y+s.d};
+const holes=k=>k?S.lv[k-1].furn.filter(f=>f.k=='s'):[];
+const inH=(k,x,y)=>holes(k).some(f=>covers(f,x,y));
+function surf(L,x,y){let h=0;for(const f of L.furn){if(f.k=='s'||tp(f).wall||!covers(f,x,y))continue;h=Math.max(h,Math.max(...build(tp(f),f.r,0,0,0,'#000').boxes.map(b=>b.z1)))}return h}
+function fits(k,t,r,x,y,self,needFloor=true){const L=S.lv[k],s=dims(t,r);if(x<0||y<0||x+s.w>N||y+s.d>N)return false;
+ for(let i=0;i<s.w;i++)for(let j=0;j<s.d;j++){if(needFloor&&!L.floor[(x+i)+','+(y+j)])return false;if(inH(k,x+i,y+j))return false}
+ for(const f of L.furn){if(f===self)continue;const b=tp(f);if(t.rug||b.rug||!!t.wall!=!!b.wall)continue;const q=dims(b,f.r);if(x<f.x+q.w&&x+s.w>f.x&&y<f.y+q.d&&y+s.d>f.y)return false}return true}
+function lvItems(k){const L=S.lv[k],it=[],sb=stairBoxes(L);for(const e in L.rails)it.push(...railB(e,RL[L.rails[e].i],L.rails[e].c,sb));
+ for(const e in L.walls)it.push(...(L.ops[e]?opB(e,L.ops[e],L.walls[e],wallH):[eb(e,0,1,0,wallH,L.walls[e])]));
+ for(const f of L.furn)it.push(...build(tp(f),f.r,f.x,f.y,0,f.c).boxes);
+ for(const o of L.objs)it.push(...build(tp(o),0,o.x,o.y,surf(L,o.x,o.y),o.c).boxes);return it}
+// ---------- dibujo ----------
+function fitV(){TOPH=$('hd').offsetHeight||66;const z=H*TZ*(stack?3:1),tw=N*TW+120,th=N*TH+z+120,av=Hh-TOPH;const s0=Math.min(W/tw,av/th);sc=s0*zm;ox=W/2+pan[0];oy=TOPH+(av-(N*TH+z)*sc)/2+z*sc+pan[1]}
+function floors(k){const L=S.lv[k];for(let y=0;y<N;y++)for(let x=0;x<N;x++){const f=L.floor[x+','+y],q=[P(x,y,0),P(x+1,y,0),P(x+1,y+1,0),P(x,y+1,0)];
+ if(inH(k,x,y)){poly(q,'rgba(0,0,0,.35)');continue}
+ if(!f){if(k==cur)poly(q,'rgba(128,128,128,.07)','rgba(128,128,128,.2)');continue}
+ poly(q,f.c,'rgba(0,0,0,.08)');g.strokeStyle='rgba(0,0,0,.2)';
+ if(f.p==1){g.beginPath();[[.5,0,.5,1],[0,.5,1,.5]].forEach(l=>{g.moveTo(...P(x+l[0],y+l[1],0));g.lineTo(...P(x+l[2],y+l[3],0))});g.stroke()}
+ if(f.p==2){g.beginPath();for(let i=1;i<4;i++){g.moveTo(...P(x+i/4,y,0));g.lineTo(...P(x+i/4,y+1,0))}g.stroke()}
+ if(f.p==3&&(x+y)%2)poly(q,'rgba(0,0,0,.18)')}}
+const diamond=(x,y,w,d,fill,st)=>poly([P(x,y,0),P(x+w,y,0),P(x+w,y+d,0),P(x,y+d,0)],fill,st);
+function edgeLine(e,c,wd){const[t,x,y]=e.split(',');const X=+x,Y=+y,a=P(X,Y,0),b=t=='H'?P(X+1,Y,0):P(X,Y+1,0);g.strokeStyle=c;g.lineWidth=wd;g.beginPath();g.moveTo(...a);g.lineTo(...b);g.stroke()}
+const draw=()=>render(g,dpr,false);
+function render(G,f,snap){if(!S)return;const g0=g;g=G;W=innerWidth;Hh=innerHeight;
+ if(!snap){const nw=Math.round(W*f),nh=Math.round(Hh*f);if(cv.width!=nw||cv.height!=nh){cv.width=nw;cv.height=nh}}
+ g.setTransform(f,0,0,f,0,0);g.clearRect(0,0,W,Hh);
+ if(snap){g.fillStyle=getComputedStyle(document.body).backgroundColor;g.fillRect(0,0,W,Hh)}
+ fitV();const ks=stack?[0,1,2]:[cur];
+ for(const k of ks){ZO=stack?k:0;floors(k);order(lvItems(k)).forEach(b=>drawBox(b))}
+ ZO=stack?cur:0;
+ if(!snap)overlay();else{g.fillStyle=getComputedStyle(document.body).color;g.font='bold 20px system-ui,sans-serif';g.fillText('Creador de Interiores Isométrico',18,30);g.font='14px system-ui,sans-serif';g.fillText('Creado por '+($('by').value||'—'),18,52)}
+ g=g0;if(!snap)save()}
+function overlay(){g.save();
+ if(sel){g.strokeStyle='#ffd400';g.lineWidth=3;
+  if(sel.t=='furn'||sel.t=='obj'){const o=sel.o,q=sel.t=='furn'?dims(tp(o),o.r):{w:1,d:1};diamond(o.x,o.y,q.w,q.d,'rgba(255,212,0,.25)','#ffd400')}
+  else if(sel.t=='floor'){const[x,y]=sel.k.split(',').map(Number);diamond(x,y,1,1,'rgba(255,212,0,.3)','#ffd400')}else edgeLine(sel.e,'#ffd400',5)}
+ if(hov&&tool!='mano'&&tool!='select'){const{x,y}=hov,ib=x>=0&&y>=0&&x<N&&y<N,L=cur$(),bad=ok=>ok?null:'#ff3b3b';
+  if(tool=='gradas'||(CT[tool]&&!curIt().obj)){const t=tool=='gradas'?ST[I.gradas]:curIt().t;let ok=fits(cur,t,rot,x,y);if(tool=='gradas')ok=ok&&cur<2&&upperFree(x,y,t);
+   g.globalAlpha=.7;order(build(t,rot,x,y,0,col).boxes).forEach(b=>drawBox(b,bad(ok)))}
+  else if(CT[tool]){const ok=objOK(x,y);g.globalAlpha=.7;order(build(curIt().t,0,x,y,ok?surf(L,x,y):0,col).boxes).forEach(b=>drawBox(b,bad(ok)))}
+  else if(tool=='baranda'){if(veOK(hov.e)){g.globalAlpha=.7;order(railB(hov.e,RL[I.baranda],col,stairBoxes(L))).forEach(b=>drawBox(b))}}
+  else if(tool=='pared'||tool=='puerta'||tool=='ventana'){if(veOK(hov.e))edgeLine(hov.e,col,7)}
+  else if(tool=='piso'&&ib){g.globalAlpha=.6;diamond(x,y,1,1,col,'#000')}}
+ g.restore()}
+// ---------- interacción ----------
+const veOK=e=>{const[t,x,y]=e.split(',');const X=+x,Y=+y;return t=='H'?X>=0&&X<N&&Y>=0&&Y<=N:X>=0&&X<=N&&Y>=0&&Y<N};
+function at(ev){const r=cv.getBoundingClientRect(),sx=ev.clientX-r.left,sy=ev.clientY-r.top+(stack?cur*H*TZ*sc:0),a=(sx-ox)/(TW/2*sc),b=(sy-oy)/(TH/2*sc),fx=(a+b)/2,fy=(b-a)/2,x=Math.floor(fx),y=Math.floor(fy);
+ const d=[[fy-y,'H,'+x+','+y],[y+1-fy,'H,'+x+','+(y+1)],[fx-x,'V,'+x+','+y],[x+1-fx,'V,'+(x+1)+','+y]].sort((p,q)=>p[0]-q[0])[0];return{x,y,e:d[1],ed:d[0]}}
+const CT={mueble:['m',M],luz:['l',LZ],objeto:['o',OB]};
+function curIt(){const[k,c]=CT[tool],a=A[tool],i=I[tool],t=c[a].items[i];return{k,a,i,t,obj:tool=='objeto'||!!t.obj}}
+const stairsAt=(L,x,y)=>L.furn.some(f=>f.k=='s'&&covers(f,x,y));
+const objOK=(x,y)=>{const L=cur$();return x>=0&&y>=0&&x<N&&y<N&&!!L.floor[x+','+y]&&!inH(cur,x,y)&&!stairsAt(L,x,y)};
+const upperFree=(x,y,t)=>S.lv[cur+1].furn.every(f=>{const b=tp(f);if(b.wall)return true;const q=dims(b,f.r),s=dims(t,rot);return!(x<f.x+q.w&&x+s.w>f.x&&y<f.y+q.d&&y+s.d>f.y)});
+function pick(h){const L=cur$();let o=L.objs.find(o=>o.x==h.x&&o.y==h.y);if(o)return{t:'obj',o};
+ o=L.furn.find(f=>covers(f,h.x,h.y)&&!tp(f).rug)||L.furn.find(f=>covers(f,h.x,h.y));if(o)return{t:'furn',o};
+ if(h.ed<.25){if(L.ops[h.e])return{t:'op',e:h.e};if(L.rails[h.e])return{t:'rail',e:h.e};if(L.walls[h.e])return{t:'wall',e:h.e}}
+ return L.floor[h.x+','+h.y]?{t:'floor',k:h.x+','+h.y}:null}
+function selCol(s){const L=cur$();return s.t=='obj'||s.t=='furn'?s.o.c:s.t=='op'?L.ops[s.e].c:s.t=='rail'?L.rails[s.e].c:s.t=='wall'?L.walls[s.e]:L.floor[s.k].c}
+function setCol(c){col=c;if(sel){const L=cur$();if(sel.t=='obj'||sel.t=='furn')sel.o.c=c;else if(sel.t=='op')L.ops[sel.e].c=c;else if(sel.t=='rail')L.rails[sel.e].c=c;else if(sel.t=='wall')L.walls[sel.e]=c;else L.floor[sel.k].c=c}}
+function act(h,er){const L=cur$(),k=h.x+','+h.y,ib=h.x>=0&&h.y>=0&&h.x<N&&h.y<N;
+ if(tool=='select'){sel=pick(h);if(sel)col=selCol(sel);ui();return}
+ if(er||tool=='borrar'){sel=null;
+  const oi=L.objs.findIndex(o=>o.x==h.x&&o.y==h.y);if(oi>=0)return L.objs.splice(oi,1);
+  const fi=L.furn.findIndex(f=>covers(f,h.x,h.y)&&!tp(f).rug);if(fi>=0)return L.furn.splice(fi,1);
+  if(h.ed<.22){if(L.ops[h.e])return delete L.ops[h.e];if(L.rails[h.e])return delete L.rails[h.e];if(L.walls[h.e])return delete L.walls[h.e]}
+  const ri=L.furn.findIndex(f=>covers(f,h.x,h.y));if(ri>=0)return L.furn.splice(ri,1);return delete L.floor[k]}
+ if(tool=='piso'){if(ib)L.floor[k]={c:col,p:pat}}
+ else if(tool=='pared'){if(veOK(h.e))L.walls[h.e]=col}
+ else if(tool=='baranda'){if(veOK(h.e))L.rails[h.e]={i:I.baranda,c:col}}
+ else if(tool=='puerta'||tool=='ventana'){if(!veOK(h.e))return;if(!L.walls[h.e])L.walls[h.e]='#f6f0e6';L.ops[h.e]={t:tool=='puerta'?'D':'W',i:I[tool],c:col}}
+ else if(CT[tool]){const q=curIt();
+  if(q.obj){if(!objOK(h.x,h.y))return;const n={k:q.k,a:q.a,i:q.i,x:h.x,y:h.y,c:col},oi=L.objs.findIndex(o=>o.x==h.x&&o.y==h.y);if(oi>=0)L.objs[oi]=n;else L.objs.push(n)}
+  else{const ex=L.furn.find(f=>f.k==q.k&&f.a==q.a&&f.i==q.i&&f.x==h.x&&f.y==h.y);if(ex){ex.c=col;ex.r=rot}else if(fits(cur,q.t,rot,h.x,h.y))L.furn.push({k:q.k,a:q.a,i:q.i,x:h.x,y:h.y,r:rot,c:col});else toast('No cabe aquí (falta piso o hay otro objeto)')}}
+ else if(tool=='gradas'){if(cur>=2)return toast('Último nivel: las gradas no suben más');const t=ST[I.gradas];
+  if(!fits(cur,t,rot,h.x,h.y))return toast('No cabe aquí');if(!upperFree(h.x,h.y,t))return toast('El nivel superior tiene un mueble en ese lugar');
+  L.furn.push({k:'s',i:I.gradas,x:h.x,y:h.y,r:rot,c:col});toast('Las gradas llegan automáticamente al nivel '+(cur+2))}}
+// punteros: un dedo/ratón actúa, dos dedos = pellizco (zoom) y desplazamiento
+const ptr=new Map();let pin=null,tap=null;const PT=['piso','pared','borrar'];
+cv.addEventListener('contextmenu',e=>e.preventDefault());
+cv.addEventListener('pointerdown',e=>{cv.setPointerCapture(e.pointerId);ptr.set(e.pointerId,[e.clientX,e.clientY]);hov=at(e);
+ if(ptr.size==2){const[a,b]=[...ptr.values()];pin={d:Math.hypot(a[0]-b[0],a[1]-b[1])||1,z:zm,m:[(a[0]+b[0])/2,(a[1]+b[1])/2],p:[...pan]};paint=false;drag=null;tap=null;return}
+ if(ptr.size>2)return;
+ if(tool=='mano'||e.button==1){drag={x:e.clientX,y:e.clientY,p:[...pan]};return}
+ if(e.pointerType=='touch'){tap={x:e.clientX,y:e.clientY,h:hov,moved:false};draw();return}
+ act(hov,e.button==2);paint=true;ui2();draw()});
+cv.addEventListener('pointermove',e=>{if(ptr.has(e.pointerId))ptr.set(e.pointerId,[e.clientX,e.clientY]);
+ if(pin&&ptr.size>=2){const[a,b]=[...ptr.values()],d=Math.hypot(a[0]-b[0],a[1]-b[1]),m=[(a[0]+b[0])/2,(a[1]+b[1])/2];zm=Math.max(.4,Math.min(4,pin.z*d/pin.d));pan=[pin.p[0]+m[0]-pin.m[0],pin.p[1]+m[1]-pin.m[1]];draw();return}
+ if(drag){pan=[drag.p[0]+e.clientX-drag.x,drag.p[1]+e.clientY-drag.y];draw();return}
+ hov=at(e);
+ if(tap&&!tap.moved&&Math.hypot(e.clientX-tap.x,e.clientY-tap.y)>8){tap.moved=true;if(PT.includes(tool)){act(tap.h,false);paint=true}}
+ if(paint&&PT.includes(tool))act(hov,e.buttons==2);draw()});
+const up=e=>{ptr.delete(e.pointerId);if(ptr.size<2)pin=null;
+ if(tap&&!tap.moved&&e.type=='pointerup'){act(tap.h,false);ui2()}
+ if(e.pointerType=='touch')hov=null;tap=null;paint=false;drag=null;draw()};
+cv.addEventListener('pointerup',up);cv.addEventListener('pointercancel',up);
+cv.addEventListener('pointerleave',()=>{if(!ptr.size){hov=null;draw()}});
+document.addEventListener('gesturestart',e=>e.preventDefault());
+cv.addEventListener('wheel',e=>{e.preventDefault();zm=Math.max(.4,Math.min(4,zm*(e.deltaY<0?1.1:.9)));draw()},{passive:false});
+addEventListener('keydown',e=>{if(e.key=='r'||e.key=='R'){rot=(rot+1)%4;draw()}});
+addEventListener('resize',()=>{dpr=devicePixelRatio||1;draw()});
+// ---------- miniaturas ----------
+const TC={};
+function thumb(key,boxes){if(TC[key])return TC[key];const c=document.createElement('canvas');c.width=c.height=112;const sg=g,s0=[ox,oy,sc,ZO];g=c.getContext('2d');ZO=0;ox=0;oy=0;sc=1;
+ let a=1e9,b=-1e9,cc=1e9,d=-1e9;boxes.forEach(q=>[[q.x0,q.y0],[q.x1,q.y0],[q.x1,q.y1],[q.x0,q.y1]].forEach(([x,y])=>[q.z0,q.z1].forEach(z=>{const p=P(x,y,z);a=Math.min(a,p[0]);b=Math.max(b,p[0]);cc=Math.min(cc,p[1]);d=Math.max(d,p[1])})));
+ sc=Math.min(100/(b-a||1),100/(d-cc||1));ox=56-(a+b)/2*sc;oy=56-(cc+d)/2*sc;order(boxes).forEach(q=>drawBox(q));g=sg;[ox,oy,sc,ZO]=s0;return TC[key]=c}
+function itemBoxes(t,it){if(t=='baranda')return railB('H,0,0',it,it.c,[]);if(t=='puerta'||t=='ventana'){const o={t:t=='puerta'?'D':'W',i:it.idx,c:it.c};return opB('H,0,0',o,'#f4ece0',H)}return build(it,0,0,0,0,it.c).boxes}
+// ---------- interfaz ----------
+const TOOLS=[['mano','✋','Mover vista'],['select','👆','Seleccionar'],['piso','▦','Piso'],['pared','🧱','Pared'],['puerta','🚪','Puertas'],['ventana','🪟','Ventanas'],['baranda','🚧','Barandas'],['mueble','🛋️','Muebles'],['objeto','🪴','Objetos'],['luz','🔦','Luminarias'],['gradas','🪜','Gradas'],['borrar','🧹','Borrar']];
+const mk=(h,t,cl,fn)=>{const b=document.createElement('button');b.innerHTML=h;b.title=t||'';if(cl)b.className=cl;b.onclick=fn;return b};
+function ui(){const lb=$('lb');lb.innerHTML='';TOOLS.forEach(([k,i,t])=>lb.append(mk(i,t,tool==k?'on':'',()=>{if(tool==k&&CATS[k])popOpen=!popOpen;else{tool=k;popOpen=true;if(k!='select')sel=null}ui();draw()})));
+ const rb=$('rb');rb.innerHTML='';
+ ['1','2','3'].forEach((n,i)=>rb.append(mk('<small>N</small>'+n,'Nivel '+n,cur==i?'on':'',()=>{cur=i;sel=null;ui();draw()})));
+ rb.append(mk('🏢','Ver niveles apilados',stack?'on':'',()=>{stack=!stack;ui();draw()}),mk('🔄','Rotar (R)','',()=>{rot=(rot+1)%4;draw()}),
+  mk('🧱','Paredes altas / bajas',wallH<1?'on':'',()=>{wallH=wallH>1?.45:H;ui();draw()}),mk('➕','Acercar','',()=>{zm=Math.min(4,zm*1.2);draw()}),mk('➖','Alejar','',()=>{zm=Math.max(.4,zm/1.2);draw()}),
+  mk('🗺️','Nuevo terreno','',()=>{$('st').style.display='flex'}));
+ ui2()}
+function ui2(){const cat=CATS[tool],pop=$('pop');pop.style.display=cat&&popOpen?'flex':'none';
+ if(cat&&popOpen){pop.innerHTML='<div id="tabs"></div><div id="grid"></div>';const tabs=pop.firstChild,grid=pop.lastChild;
+  if(cat.length>1)cat.forEach((c,i)=>tabs.append(mk(c.i,c.n,A[tool]==i?'on':'',()=>{A[tool]=i;I[tool]=0;col=cat[i].items[0].c;ui2()})));else tabs.style.display='none';
+  const items=cat[A[tool]].items;items.forEach((it,i)=>{it.idx=i;const b=mk('','',I[tool]==i?'on':'',()=>{I[tool]=i;col=it.c;ui2();draw()});const cn=thumb(tool+A[tool]+'_'+i,itemBoxes(tool,it));const c2=document.createElement('canvas');c2.width=c2.height=112;c2.getContext('2d').drawImage(cn,0,0);b.append(c2,it.n);grid.append(b)})}
+ const cb=$('cb'),show=(['piso','pared','puerta','ventana','baranda','mueble','objeto','luz','gradas'].includes(tool)||sel);cb.style.display=show?'flex':'none';cb.innerHTML='';
+ PAL.forEach(c=>{const b=mk('','',(c==col?'sw on':'sw'),()=>{setCol(c);ui2();draw()});b.style.background=c;cb.append(b)});
+ const pk=document.createElement('input');pk.type='color';pk.value=col;pk.oninput=e=>{setCol(e.target.value);draw()};pk.onchange=()=>ui2();cb.append(pk);
+ if(tool=='piso'){const s=document.createElement('select');['Liso','Baldosa','Madera','Tablero'].forEach((n,i)=>s.add(new Option(n,i)));s.value=pat;s.onchange=()=>pat=+s.value;cb.append(s,mk('Rellenar todo','','',()=>{const L=cur$();for(let y=0;y<N;y++)for(let x=0;x<N;x++)L.floor[x+','+y]={c:col,p:pat};draw()}))}}
+function start(){$('st').style.display='none';ui();draw()}
+document.querySelectorAll('.card button').forEach(b=>b.onclick=()=>newGame(+b.dataset.n));
+try{const s=JSON.parse(localStorage.getItem('interiores-v2'));if(s&&s.lv){$('cont').style.display='';$('cont').onclick=()=>{S=s;S.lv.forEach(l=>l.rails=l.rails||{});N=s.n;cur=0;start()}}}catch(e){}
+dpr=devicePixelRatio||1;
+try{$('by').value=localStorage.getItem('interiores-by')||''}catch(e){}
+$('by').oninput=()=>{try{localStorage.setItem('interiores-by',$('by').value)}catch(e){}};
+function ask(t,fn){$('mt').textContent=t;$('md').style.display='flex';$('my').onclick=()=>{$('md').style.display='none';fn()};$('mn').onclick=()=>$('md').style.display='none'}
+$('clr').onclick=()=>{if(S)ask('¿Desea borrar todo? Se eliminarán los 3 niveles y no se puede deshacer. ¿Está seguro?',()=>{newGame(S.n)})};
+$('sv').onclick=()=>{if(!S)return;const f=2000/Math.min(innerWidth,innerHeight),oc=document.createElement('canvas');oc.width=Math.round(innerWidth*f);oc.height=Math.round(innerHeight*f);render(oc.getContext('2d'),f,true);draw();
+ oc.toBlob(async bl=>{if(!bl)return toast('No se pudo crear la imagen');const name='interiores-'+Date.now()+'.png';let dl=null;
+  try{if(typeof claude!='undefined')dl=await claude.use('downloads')}catch(e){}
+  if(dl){try{await dl.save({filename:name,data:bl});toast('Imagen guardada')}catch(e){if(!e||e.code!='declined')toast('No se pudo guardar la imagen')}}
+  else{const a=document.createElement('a');a.href=URL.createObjectURL(bl);a.download=name;a.click()}},'image/png')};
+</script></body></html>
